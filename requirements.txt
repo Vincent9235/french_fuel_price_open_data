@@ -1,0 +1,9 @@
+streamlit
+pandas
+requests
+zipfile
+io
+json
+urllib.request
+xml.etree.ElementTree
+pandas.io.json
