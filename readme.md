@@ -19,7 +19,7 @@ streamlit run .\🏠home.py
 ```
 <br>
 Don't forget to install all the requirements before running the app.
-You also can have access to my app on [streamlit sharing](https://vincent9235-uber-nyc.streamlit.app/)
+You also can have access to my app on **[streamlit sharing](https://www.linkedin.com/in/vincentlaurenspro/)**
 
 ## Credits
 Made with ❤️ by **me**
