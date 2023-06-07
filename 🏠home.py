@@ -1,11 +1,3 @@
-# Lien pour trouver les marques des stations : https://raw.githubusercontent.com/openeventdatabase/datasources/master/fr.prix-carburants/stations.json
-# Ex de réutilisation : https://explore.data.gouv.fr/prix-carburants
-
-# TO DO:
-# - Récupérer données via API ou via fichier zip/xml (historique de l'année)
-# - Faire une page explication du projet et du traitement de la donnée
-# - Analyser la qualité des données : doublons, valeurs manquantes, valeurs aberrantes
-
 # Import librairies
 import requests
 import zipfile
@@ -13,7 +5,6 @@ import pandas as pd
 import io 
 import json
 import xml.etree.ElementTree as ET
-import matplotlib.pyplot as plt
 import datetime
 import streamlit as st
 import plotly.express as px
@@ -41,36 +32,16 @@ with st.sidebar:
 
 # URL to load data
 historique_2023_url = "https://donnees.roulez-eco.fr/opendata/annee"
-historique_2022_url = "https://donnees.roulez-eco.fr/opendata/annee/2022"
-
 # Local file if url is not available
 historique_2023_filename = "data/PrixCarburants_annuel_2023.xml"
-historique_2022_filename = "data/PrixCarburants_annuel_2022.xml"
 # I dont use url here because the original file is false
 sign_file = 'data/stations.json'
-
-## Load data 2022
-#try:
-#    # Verify if the URL is available
-#    urllib.request.urlopen(historique_2022_url)
-#    # if url is available, load XML file
-#    response = requests.get(historique_2022_url)
-#
-#    zip_file = zipfile.ZipFile(BytesIO(response.content))
-#    file_name = zip_file.namelist()[0]
-#    data = zip_file.open(file_name)
-#    price_2022 = load_xml(data)
-#except:
-#    # Else, load local file
-#    price_2022 = load_xml(historique_2022_filename)
 
 # Load data from Open Data API	
 api_url = "https://data.economie.gouv.fr/api/records/1.0/search/?dataset=prix-des-carburants-en-france-flux-instantane-v2&q=&rows=10000&facet=carburants_disponibles&facet=carburants_indisponibles&facet=horaires_automate_24_24&facet=services_service&facet=departement&facet=region&facet=id&facet=Adresse"
 response_data = call_api(api_url)
 
-st.title('Fuel prices in France')
-st.write('This application is a Streamlit dashboard that can be used to analyze fuel prices in France. The data is from the French government open data portal. The data is updated every 15 minutes.')
-st.subheader('National Fuel prices in France :')
+st.title('Fuel prices in France💰')
 
 # Display data in many columns
 if response_data is not None:
@@ -79,7 +50,7 @@ if response_data is not None:
     nb_stations = len(response_data['records'])
     st.write('Number of fuel stations in France in the dataset: ', nb_stations, '⛽')
 
-    # Compter le nombre de villes
+    # Count city number
     villes = []
     for record in response_data['records']:
         if 'fields' in record and 'ville' in record['fields']:
@@ -87,16 +58,16 @@ if response_data is not None:
     nb_villes = len(set(villes))
     st.write('Number of cities in the dataset : ', nb_villes, '🏙️')
 
-    # Créer un dictionnaire pour stocker les prix de chaque type de carburant
+    # Create a dictionary to store prices for each type of fuel
     prix_par_carburant = {}
 
-    # Parcourir tous les enregistrements et extraire les prix par type de carburant
+    # Browse all records and extract prices by fuel type
     for record in response_data['records']:
         if 'fields' in record and 'prix' in record['fields']:
             prix_json = record['fields']['prix']
             prix_data = json.loads(prix_json)
 
-            # Parcourir les prix de chaque type de carburant et les ajouter au dictionnaire
+            # Browse the prices of each type of fuel and add them to the dictionary
             for prix in prix_data:
                 if '@nom' in prix and '@valeur' in prix:
                     nom_carburant = prix['@nom']
@@ -106,96 +77,95 @@ if response_data is not None:
                     prix_par_carburant[nom_carburant] = []
                 prix_par_carburant[nom_carburant].append(valeur_prix)
 
-    # Calculer le prix moyen de chaque type de carburant
+    # Calculate the average price of each type of fuel
     prix_moyen_par_carburant = {}
     for nom_carburant, prix_liste in prix_par_carburant.items():
         prix_moyen = sum(prix_liste) / len(prix_liste)
         prix_moyen_par_carburant[nom_carburant] = prix_moyen
 
-# Afficher le prix moyen de chaque type de carburant
-# Calculer le nombre de colonnes nécessaires
+# Show the average price of each type of fuel
+    st.subheader('National Fuel prices in France :')
+# Calculate the number of columns needed
     nb_colonnes = len(prix_moyen_par_carburant)
-    # Afficher le prix moyen de chaque type de carburant dans Streamlit
+    # Show the average price of each type of fuel
     colonnes = st.columns(nb_colonnes)
     for i, (nom_carburant, prix_moyen) in enumerate(prix_moyen_par_carburant.items()):
         colonne = colonnes[i]
-        prix_arrondi = round(prix_moyen, 2)  # Arrondir à deux chiffres après la virgule
+        prix_arrondi = round(prix_moyen, 2)
         colonne.metric(label=nom_carburant, value=str(prix_arrondi) + '€') 
 
 # Display a graph showing 30-day price trends for each type of fuel 
 st.subheader('Price trends for each type of fuel over last 30 days :')
 
-# Récupérer le fichier ZIP à partir de l'URL
+# Retrieve the ZIP file from the URL
 response = requests.get(historique_2023_url)
 zip_content = io.BytesIO(response.content)
 
-# Extraire le fichier XML du fichier ZIP
+# Extract XML from ZIP file 
 with zipfile.ZipFile(zip_content, "r") as zip_ref:
     with zip_ref.open("PrixCarburants_annuel_2023.xml") as xml_file:
         tree = ET.parse(xml_file)
         root = tree.getroot()
 
-# Average change in fuel prices over the past 30 days :
-
-# Créer un dictionnaire pour stocker les données des prix par carburant
+# Dictionaries for storing price data by fuel
 prix_par_carburant = {}
 prix_par_carburant_6_mois = {}
 
-# Récupérer la date du jour
+# Get date of the day
 date_jour = datetime.datetime.now().date()
 
-# Récupérer la date d'il y a 30 jours
+# Get date of 30 days ago
 date_30_jours = date_jour - datetime.timedelta(days=30)
 
-# Récupérer la date d'il y a 6 mois
+# Get date of 6 months ago
 date_6_mois = date_jour - datetime.timedelta(days=6 * 30)
 
-# Parcourir les éléments <prix> sur les 30 derniers jours dans les données XML
+# Browse <price> elements over the last 30 days in XML data
 for prix_element in root.iter('prix'):
-    # Récupérer la date et la valeur du prix
+    # Get price, date and value
     nom_carburant = prix_element.get('nom')
     date_maj = prix_element.get('maj')
     valeur_prix = prix_element.get('valeur')
 
-    # Vérifier si la valeur du prix existe
+    # Check if the price value exists
     if valeur_prix is not None:
         valeur_prix = float(valeur_prix)
 
-        # Vérifier si la date est dans la plage des 30 derniers jours
+        # Check if the date is in the range of the last 30 days
         if date_maj >= str(date_30_jours):
-            # Ajouter le prix au dictionnaire correspondant au carburant
+            # Add the price to the dictionary corresponding to the fuel
             if nom_carburant in prix_par_carburant:
                 prix_par_carburant[nom_carburant].append((date_maj, valeur_prix))
             else:
                 prix_par_carburant[nom_carburant] = [(date_maj, valeur_prix)]
 
-        # Vérifier si la date est dans la plage des 6 derniers mois
+        # Check if the date is within the last 6 months range
         if date_maj >= str(date_6_mois):
-            # Ajouter le prix au dictionnaire correspondant au carburant
+            # Add the price to the dictionary corresponding to the fuel
             if nom_carburant in prix_par_carburant_6_mois:
                 prix_par_carburant_6_mois[nom_carburant].append((date_maj, valeur_prix))
             else:
                 prix_par_carburant_6_mois[nom_carburant] = [(date_maj, valeur_prix)]
                 
-# Evolution du prix des carburants au niveau national
+# Average change in fuel prices over the past 30 days :
 
-# Créer un DataFrame Pandas à partir des données de prix
+# Create a Pandas DataFrame from price data
 df_prix = pd.DataFrame()
 for carburant, prix in prix_par_carburant.items():
     df = pd.DataFrame(prix, columns=['date', 'prix'])
     df['carburant'] = carburant
     df_prix = df_prix.append(df)
 
-# Convertir la colonne 'date' en type datetime
+# Convert 'date' column to datetime type
 df_prix['date'] = pd.to_datetime(df_prix['date'])
 
-# Agréger les données par jour et calculer la moyenne des prix
+# Group prices by date and fuel type
 df_agrege = df_prix.groupby([df_prix['date'].dt.date, 'carburant']).mean().reset_index()
 
-# Créer le graphique avec Plotly Express
+# Create a graph showing the average change in fuel prices over the last 30 days
 fig = px.line(df_agrege, x='date', y='prix', color='carburant', title='Average change in fuel prices (last 30 days)')
 
-# Afficher le graphique dans Streamlit
+# Display pot 
 st.plotly_chart(fig)
 
 # Display a graph showing 6 month price trends for each type of fuel 
@@ -207,14 +177,14 @@ for carburant, prix in prix_par_carburant_6_mois.items():
     df['carburant'] = carburant
     df_prix_6_mois = df_prix_6_mois.append(df)
 
-# Convertir la colonne 'date' en type datetime
+# Convert 'date' column to datetime type
 df_prix_6_mois['date'] = pd.to_datetime(df_prix_6_mois['date'])
 
-# Agréger les données par mois et calculer la moyenne des prix
+# Group data by month and calculate average prices
 df_agrege = df_prix_6_mois.groupby([pd.Grouper(key='date', freq='M'), 'carburant']).mean().reset_index()
 
-# Créer le graphique avec Plotly Express
+# Create the graph with Plotly Express
 fig = px.line(df_agrege, x='date', y='prix', color='carburant', title='Average change in fuel prices (last 6 months)')
 
-# Afficher le graphique dans Streamlit
+# Display plot 
 st.plotly_chart(fig)

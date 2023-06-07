@@ -10,7 +10,7 @@ I used [open data](https://www.data.gouv.fr/fr/) to make this project.
 You can find all the data at the followings links : 
 * [API](https://www.prix-carburants.gouv.fr/rubrique/opendata/)
 * [Historic](https://www.prix-carburants.gouv.fr/rubrique/opendata/)
-* [Sign](https://www.prix-carburants.gouv.fr/rubrique/opendata/)
+* [Brands](https://raw.githubusercontent.com/openeventdatabase/datasources/master/fr.prix-carburants/stations.json)
 
 ## Run streamlit app
 To run app you can type in your terminal : 
@@ -19,7 +19,7 @@ streamlit run .\🏠home.py
 ```
 <br>
 Don't forget to install all the requirements before running the app.
-You also can have access to my app on **[streamlit sharing](https://www.linkedin.com/in/vincentlaurenspro/)**
+You also can have access to my app on **[streamlit](https://www.linkedin.com/in/vincentlaurenspro/)**
 
 ## Credits
 Made with ❤️ by **me**

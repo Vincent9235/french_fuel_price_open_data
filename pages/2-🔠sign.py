@@ -1,12 +1,3 @@
-# - Regarder les enseignes les plus chères par département
-# - Regarder les enseignes les moins chères par département
-# - Regarder les enseignes les plus présentes par département
-# - Regarder les enseignes les moins présentes par département
-# - Regarder les enseignes les plus chères par ville
-# - Regarder les enseignes les moins chères par ville
-# - Regarder les enseignes les plus présentes par ville
-# - Regarder les enseignes les moins présentes par ville
-
 # Imports
 import streamlit as st
 import pandas as pd
@@ -44,11 +35,11 @@ historique_2023_url = "https://donnees.roulez-eco.fr/opendata/annee"
 historique_2023_filename = "../data/PrixCarburants_annuel_2023.xml"
 
 # Load data 2023
-# Récupérer le fichier ZIP à partir de l'URL
+# Retrieve the ZIP file from the URL
 response = requests.get(historique_2023_url)
 zip_content = io.BytesIO(response.content)
 
-# Extraire le fichier XML du fichier ZIP
+# Extract the XML file from the ZIP file
 with zipfile.ZipFile(zip_content, "r") as zip_ref:
     with zip_ref.open("PrixCarburants_annuel_2023.xml") as xml_file:
         tree = ET.parse(xml_file)
@@ -57,50 +48,40 @@ with zipfile.ZipFile(zip_content, "r") as zip_ref:
 # Load data sign
 # I dont use url here because the original file is false
 sign_file = 'data/stations.json'
-# Ouvrir le fichier JSON
+# Open JSON file
 with open(sign_file, 'r') as file:
     data = file.read()
-# Supprimer les espaces blancs supplémentaires
+# Remove extra white space
 data = data.replace('\n', '')
-# Ajouter des virgules entre les objets JSON
+# Add commas between JSON objects
 data = data.replace('}{', '},{')
-# Envelopper les objets JSON dans une liste
+# Wrap JSON objects in a list
 data = f"[{data}]"
-# Charger les données JSON dans un dataframe
+# Load JSON data into a dataframe
 data_sign = pd.read_json(data)
 
 # Load data from Open Data API	
 api_url = "https://data.economie.gouv.fr/api/records/1.0/search/?dataset=prix-des-carburants-en-france-flux-instantane-v2&q=&rows=10000&facet=carburants_disponibles&facet=carburants_indisponibles&facet=horaires_automate_24_24&facet=services_service&facet=departement&facet=region&facet=id&facet=Adresse"
 response_data = call_api(api_url)
 
-# Créer un dataframe à partir des données de response_data
+# Create a dataframe from response_data
 df_response = pd.DataFrame(response_data['records'])
 df_id = df_response['fields'].apply(lambda x: x['id'])
 df_id.rename('id', inplace=True)
 
-# Effectuer la jointure en utilisant l'ID comme clé de jointure
+# Join on id 
 df_merged = pd.merge(data_sign, df_id, left_on='id', right_on='id', how='inner')
 
-# Calculer le nombre de stations par enseigne
+# Calculate the number of stations per brand
 number_values_by_enseigne = df_merged['marque'].value_counts()
 number_values_by_enseigne.rename('number_stations', inplace=True)
 
-# Voir le top 3 des enseignes les plus chers au niveau national avec le prix moyen sur les 30 derniers jours
-# Créer un dictionnaire pour stocker les données des prix par carburant
+# See the top 3 most expensive chains nationally with the average price over the last 30 days
+# Create a dictionary to store price data by fuel
 prix_par_carburant = {}
 
-# Récupérer la date du jour
+# Get the current date
 date_jour = datetime.datetime.now().date()
-
-# Récupérer le fichier ZIP à partir de l'URL
-response = requests.get(historique_2023_url)
-zip_content = io.BytesIO(response.content)
-
-# Extraire le fichier XML du fichier ZIP
-with zipfile.ZipFile(zip_content, "r") as zip_ref:
-    with zip_ref.open("PrixCarburants_annuel_2023.xml") as xml_file:
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
 
 # Extract data from pdv elements
 data = []
@@ -133,10 +114,8 @@ df['pdv_id'] = df['pdv_id'].astype('int64')
 df['maj_day'] = df['maj'].dt.date
 df_aggregated = df.groupby(['pdv_id', 'nom', 'maj_day'])['valeur'].mean().reset_index()
 
-# Effectuer la jointure en utilisant l'ID comme clé de jointure
+# Join on ID 
 df_merged_2 = pd.merge(data_sign, df_aggregated, left_on='id', right_on='pdv_id', how='inner')
-
-# Voir le top 3 des enseignes les plus chers au niveau national avec le prix moyen sur les 30 derniers jours
 
 # Convert 'maj_day' column to datetime type
 df_merged_2['maj_day'] = pd.to_datetime(df_merged_2['maj_day'])
@@ -150,22 +129,15 @@ average_price_per_brand_fuel = df_merged_2[last_30_days].groupby(['marque', 'nom
 
 # Find the top 3 most expensive brands per fuel type
 top_3_expensive_brands_fuel = average_price_per_brand_fuel.groupby('nom_y').nlargest(3) 
-
 # Find the top 3 cheapest brands per fuel type
 top_3_cheapest_brands_fuel = average_price_per_brand_fuel.groupby('nom_y').nsmallest(3) 
 
-
 # Page beginning 
-st.title('Stats on different fuel signs in France')
-st.subheader('Number of stations by sign')
+st.title('Stats on different fuel brands in France🔠')
+st.subheader('Number of stations by brand')
 
 # Display the number of stations by sign
 st.dataframe(number_values_by_enseigne)
-
-# Get unique fuel types
-fuel_types = df_merged_2['nom_y'].unique().tolist()
-# Create tabs for each fuel type
-tabs = st.tabs(fuel_types)
 
 # Display top 3 most expensive brands per fuel type
 st.subheader('Top 3 most expensive brands per fuel type')

@@ -1,5 +1,3 @@
 *.csv
 *.xml
-data/PrixCarburants_annuel_2022.xml
 data/PrixCarburants_annuel_2023.xml
-data/cities.csv

@@ -19,84 +19,90 @@ st.set_page_config(
         'About': "# This is a header. This is an *extremely* cool app!"
     })
 
+# Side bar
+with st.sidebar:
+    st.header('Informations on author')
+    st.markdown('**Vincent Laurens💻**')
+    st.write('📈Data Scientist at Bouygues Construction IT | Data Management student🏫') 
+    st.write("""<div style="width:100%;text-align:center;"><a href="https://www.linkedin.com/in/vincentlaurenspro" style="float:center"><img src="https://img.shields.io/badge/Vincent%20Laurens-0077B5?style=for-the-badge&logo=linkedin&logoColor=white&link=https://www.linkedin.com/in/vincentlaurenspro/%22" width="100%" height="50%"></img></a></div>""", unsafe_allow_html=True)
+
 # Load data
-villes_url = "https://www.data.gouv.fr/fr/datasets/r/521fe6f9-0f7f-4684-bb3f-7d3d88c581bb"
-villes_filename = "data/cities.csv"
 # I dont use url here because the original file is false
 sign_file = 'data/stations.json'
 
 # Load data sign
-# Ouvrir le fichier JSON
+# I dont use url here because the original file is false
+sign_file = 'data/stations.json'
+# Ouvrir JSON file
 with open(sign_file, 'r') as file:
     data = file.read()
-# Supprimer les espaces blancs supplémentaires
+# Remove extra white space
 data = data.replace('\n', '')
-# Ajouter des virgules entre les objets JSON
+# Add commas between JSON objects
 data = data.replace('}{', '},{')
-# Envelopper les objets JSON dans une liste
+# Wrap JSON objects in a list
 data = f"[{data}]"
-# Charger les données JSON dans un dataframe
+# Load JSON data into a dataframe
 data_sign = pd.read_json(data)
 
 # Load data from Open Data API	
 api_url = "https://data.economie.gouv.fr/api/records/1.0/search/?dataset=prix-des-carburants-en-france-flux-instantane-v2&q=&rows=10000&facet=carburants_disponibles&facet=carburants_indisponibles&facet=horaires_automate_24_24&facet=services_service&facet=departement&facet=region&facet=id&facet=Adresse"
 response_data = call_api(api_url)
 
-# Créer un dataframe à partir des données de response_data
+# Create a dataframe from response_data
 df_response = pd.DataFrame(response_data['records'])
 df_id = df_response['fields'].apply(lambda x: x['id'])
 df_id.rename('id', inplace=True)
 
-# Effectuer la jointure en utilisant l'ID comme clé de jointure
+# Join on ID 
 df_merged = pd.merge(data_sign, df_id, left_on='id', right_on='id', how='inner')
 
 # Page beginning 
-st.title('Find the nearest fuel stations from your home')
-st.subheader('Search your favorite fuel station')
+st.title('Find the nearest fuel stations from your home🔎')
+st.subheader('Search your favorite fuel station⛽')
 st.info('If you didnt find your city in the selectbox, this means that there is no station in your town. I will update this after.')
 
-# Liste des stations de la ville recherchée
+# List of stations in the searched city
 stations_ville_recherchee = []
-# Liste des villes de l'API
-villes = []
+# API city list
+villes = set()
 
+# Browse records
 for enregistrement in response_data['records']:
     fields = enregistrement.get("fields")
     ville = fields.get("ville")
 
-    if ville and ville not in villes:
-        villes.append(ville)
+    if ville:
+        villes.add(ville)
 
-villes = sorted([ville for ville in villes if ville is not None])
-city = st.selectbox('Select your city', villes)
+# Convert set to sorted list
+villes = sorted(list(villes))
 
-# Parcourir les enregistrements
-for enregistrement in response_data['records']:
-    fields = enregistrement.get("fields")
-    if fields and fields.get("ville") == city:
-        # Ajouter la station à la liste
-        stations_ville_recherchee.append(enregistrement)
+city = st.selectbox('Select your city🏙️', villes)
 
-# Vérifier si des stations ont été trouvées dans la ville recherchée
+# List of stations in the city you are looking for
+stations_ville_recherchee = [enregistrement for enregistrement in response_data['records'] if enregistrement.get("fields") and enregistrement.get("fields").get("ville") == city]
+
+# Check if any stations have been found in the searched city
 if len(stations_ville_recherchee) > 0:
     # Display all data in a map from the selected city
     st.subheader('Map of all fuel stations in your city')
-    # Récupérer les coordonnées de la première station
+    # Retrieve the coordinates of the first station
     first_station = stations_ville_recherchee[0]
     latitude = first_station['geometry']['coordinates'][1]
     longitude = first_station['geometry']['coordinates'][0]
-    # Créer la carte centrée sur la ville recherchée
+    # Create the map centered on the desired city
     m = folium.Map(location=[latitude, longitude], zoom_start=13)
 
-    # Afficher les informations des stations trouvées dans une carte Folium
+    # Display information of stations found in a Folium map
     for station in stations_ville_recherchee:
-        # Créer le contenu HTML du popup
+        # Create the HTML content of the popup
         popup_content = f"<h4>{station['fields']['adresse'] + ' ' + station['fields']['cp'] + ' ' + station['fields']['ville']}</h4>"
         
-        # Si la station a le champ carburant_indisponible
+        # If the station has the fuel_unavailable field
         if 'carburants_indisponibles' in station['fields']:
             popup_content += f"<p><strong>Carburants indisponibles :</strong> {station['fields']['carburants_indisponibles']}</p>"
-        # Récupérer les prix des carburants
+        # Get fuel prices
         prix_carburants = station['fields'].get('prix')
         if prix_carburants:
             prix_carburants = json.loads(prix_carburants)
@@ -109,7 +115,7 @@ if len(stations_ville_recherchee) > 0:
                 else:
                     popup_content += f"<p><strong>Prix {nom_carburant}:</strong> None</p>"
             elif isinstance(prix_carburants, list):
-                # Si la valeur est une liste, cela signifie qu'il y a plusieurs carburants
+                # If the value is a list, it means there are multiple fuels
                 for carburant in prix_carburants:
                     nom_carburant = carburant.get('@nom')
                     valeur_carburant = carburant.get('@valeur')
@@ -120,14 +126,14 @@ if len(stations_ville_recherchee) > 0:
         else:
             popup_content += "<p><strong>Prix:</strong> None</p>"
 
-        # Ajouter le marqueur avec le popup à la carte
+        # Add marker with popup to map
         folium.Marker(
             location=[station['geometry']['coordinates'][1], station['geometry']['coordinates'][0]],
             popup=folium.Popup(popup_content, max_width=250),
             icon=folium.Icon(color='green', icon='tint', prefix='fa')
         ).add_to(m)
         
-    # Afficher la carte dans Streamlit
+    # Display the map in the Streamlit app
     st_folium(m, width=1250)
 else : 
     st.error("No fuel station found in your city")
