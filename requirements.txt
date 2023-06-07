@@ -3,8 +3,7 @@ streamlit_folium
 pandas
 requests
 zipp
-json
+jsonschema 
 urllib3
-datetime
 plotly
 elementpath
