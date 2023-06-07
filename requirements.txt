@@ -2,7 +2,7 @@ streamlit
 streamlit_folium
 pandas
 requests
-zipfile
+zipp
 io
 json
 urllib3
