@@ -3,7 +3,6 @@ streamlit_folium
 pandas
 requests
 zipp
-io
 json
 urllib3
 datetime
