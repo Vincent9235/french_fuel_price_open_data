@@ -147,7 +147,7 @@ for prix_element in root.iter('prix'):
             else:
                 prix_par_carburant_6_mois[nom_carburant] = [(date_maj, valeur_prix)]
                 
-# Average change in fuel prices over the past 30 days :
+
 # Create a Pandas DataFrame from price data
 df_prix = pd.DataFrame()
 for carburant, prix in prix_par_carburant.items():
@@ -158,8 +158,10 @@ for carburant, prix in prix_par_carburant.items():
 # Convert 'date' column to datetime type
 df_prix['date'] = pd.to_datetime(df_prix['date'])
 
+# Rename the 'date' column with the datetime type
+df_prix.rename(columns={'date': 'date_aggregated'}, inplace=True)
+
 # Group prices by date and fuel type
-df_prix.rename(columns={'date': 'date_aggregated'}, inplace=True)  # Rename the 'date' column
 df_agrege = df_prix.groupby([df_prix['date_aggregated'].dt.date, 'carburant']).mean().reset_index()
 # Create a graph showing the average change in fuel prices over the last 30 days
 fig = px.line(df_agrege, x='date_aggregated', y='prix', color='carburant', title='Average change in fuel prices (last 30 days)')
