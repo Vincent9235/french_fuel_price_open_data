@@ -77,22 +77,22 @@ if response_data is not None:
                     prix_par_carburant[nom_carburant] = []
                 prix_par_carburant[nom_carburant].append(valeur_prix)
 
-    # Calculate the average price of each type of fuel
-    prix_moyen_par_carburant = {}
-    for nom_carburant, prix_liste in prix_par_carburant.items():
-        prix_moyen = sum(prix_liste) / len(prix_liste)
-        prix_moyen_par_carburant[nom_carburant] = prix_moyen
+# Calculate the average price of each type of fuel
+prix_moyen_par_carburant = {}
+for nom_carburant, prix_liste in prix_par_carburant.items():
+    prix_moyen = sum(prix_liste) / len(prix_liste)
+    prix_moyen_par_carburant[nom_carburant] = prix_moyen
 
 # Show the average price of each type of fuel
-    st.subheader('National Fuel prices in France :')
+st.subheader('National Fuel prices in France :')
 # Calculate the number of columns needed
-    nb_colonnes = len(prix_moyen_par_carburant)
-    # Show the average price of each type of fuel
-    colonnes = st.columns(nb_colonnes)
-    for i, (nom_carburant, prix_moyen) in enumerate(prix_moyen_par_carburant.items()):
-        colonne = colonnes[i]
-        prix_arrondi = round(prix_moyen, 2)
-        colonne.metric(label=nom_carburant, value=str(prix_arrondi) + '€') 
+nb_colonnes = len(prix_moyen_par_carburant)
+# Show the average price of each type of fuel
+colonnes = st.columns(nb_colonnes)
+for i, (nom_carburant, prix_moyen) in enumerate(prix_moyen_par_carburant.items()):
+    colonne = colonnes[i]
+    prix_arrondi = round(prix_moyen, 2)
+    colonne.metric(label=nom_carburant, value=str(prix_arrondi) + '€') 
 
 # Display a graph showing 30-day price trends for each type of fuel 
 st.subheader('Price trends for each type of fuel over last 30 days :')
@@ -154,7 +154,7 @@ df_prix = pd.DataFrame()
 for carburant, prix in prix_par_carburant.items():
     df = pd.DataFrame(prix, columns=['date', 'prix'])
     df['carburant'] = carburant
-    df_prix = df_prix.append(df)
+    df_prix = pd.concat([df_prix, df], ignore_index=True)
 
 # Convert 'date' column to datetime type
 df_prix['date'] = pd.to_datetime(df_prix['date'])
