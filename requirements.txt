@@ -1,9 +1,9 @@
-streamlit
+streamlit==1.21.0
 streamlit_folium
-pandas
+pandas==1.5.3
 requests
 zipp
 jsonschema 
 urllib3
-plotly
+plotly==5.14.1
 elementpath
