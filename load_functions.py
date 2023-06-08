@@ -1,11 +1,7 @@
 # Import librairies
 import requests
-import zipfile
 import pandas as pd
-from io import BytesIO
-from pandas.io.json import json_normalize
 import json
-import urllib.request
 import xml.etree.ElementTree as ET
 
 # Function to load XML file
