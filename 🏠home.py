@@ -162,7 +162,7 @@ df_prix['date'] = pd.to_datetime(df_prix['date'])
 df_prix.rename(columns={'date': 'date_aggregated'}, inplace=True)
 
 # Group prices by date and fuel type
-df_agrege = df_prix.groupby([df_prix['date_aggregated'].dt.date, 'carburant']).mean().reset_index()
+df_agrege = df_prix.groupby([df_prix['date_aggregated'].dt.date, 'carburant']).mean().reset_index(drop=False)
 # Create a graph showing the average change in fuel prices over the last 30 days
 fig = px.line(df_agrege, x='date_aggregated', y='prix', color='carburant', title='Average change in fuel prices (last 30 days)')
 
